@@ -1,325 +1,1573 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Brain Games (Single File)</title>
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Brain Games + Bible Study</title>
 <style>
-  body{font-family:Arial,sans-serif;background:#f5f6fa;text-align:center;margin:0}
-  header{background:#222;color:#fff;padding:18px}
-  .tabs button{margin:5px;padding:8px 14px;border:none;border-radius:10px;cursor:pointer}
-  .view{display:none;padding:20px}
-  .active{display:block}
-  .grid{display:grid;grid-template-columns:repeat(6,60px);gap:8px;justify-content:center;margin-top:15px}
-  .card{width:60px;height:60px;background:#444;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;border-radius:12px;user-select:none}
-  #reactionBox{width:200px;height:200px;margin:20px auto;background:#c0392b;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;border-radius:18px;user-select:none}
-  select{padding:8px;border-radius:10px}
-  input{padding:10px;border-radius:10px;border:1px solid #ccc}
-  button{background:#eee}
+  :root{
+    --bg:#0f1220;
+    --panel:#151a2e;
+    --panel2:#11162a;
+    --text:#e9ecff;
+    --muted:#aab0d6;
+    --border:rgba(255,255,255,0.12);
+    --good:#42d17d;
+    --bad:#ff5b7a;
+    --warn:#ffcc66;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background:
+      radial-gradient(1200px 700px at 10% 0%, rgba(110, 132, 255, .22), transparent 60%),
+      radial-gradient(1000px 700px at 90% 10%, rgba(255, 120, 200, .16), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    text-align:center;
+  }
+
+  header{
+    position:sticky; top:0; z-index:10;
+    background: linear-gradient(to bottom, rgba(15,18,32,.92), rgba(15,18,32,.60));
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px;
+  }
+
+  h1{margin:0;font-size:18px}
+  .sub{margin:6px 0 0;color:var(--muted);font-size:12px}
+
+  .tabs{
+    display:flex; flex-wrap:wrap; gap:8px;
+    justify-content:center;
+    margin-top:12px;
+  }
+
+  button{
+    border:1px solid var(--border);
+    background: rgba(255,255,255,0.08);
+    color:var(--text);
+    padding:9px 12px;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:13px;
+  }
+  button:hover{background: rgba(255,255,255,0.12)}
+  button.primary{background: rgba(110,132,255,0.22)}
+  button.ghost{background: transparent}
+  button.danger{background: rgba(255,91,122,0.14)}
+  button:disabled{opacity:.55; cursor:not-allowed}
+
+  main{max-width:1100px;margin:16px auto;padding:0 14px 24px}
+  .view{display:none}
+  .view.active{display:block}
+
+  .panel{
+    background: rgba(255,255,255,0.06);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:16px;
+    text-align:left;
+    margin-bottom:14px;
+  }
+
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .space{justify-content:space-between}
+  .muted{color:var(--muted);font-size:13px}
+  .pill{
+    display:inline-block;
+    border:1px solid var(--border);
+    background: rgba(0,0,0,0.25);
+    padding:6px 10px;
+    border-radius:999px;
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  select, input, textarea{
+    background: rgba(0,0,0,0.25);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:12px;
+    font-size:14px;
+    outline:none;
+  }
+
+  textarea{width:100%;min-height:160px}
+  .big{font-size:16px;line-height:1.55}
+
+  /* Home cards */
+  .grid2{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap:10px;
+    margin-top:12px;
+  }
+  @media (max-width:720px){
+    .grid2{grid-template-columns:1fr}
+  }
+  .bigbtn{
+    text-align:left;
+    padding:14px;
+    border-radius:18px;
+    border:1px solid var(--border);
+    background: rgba(255,255,255,0.08);
+    cursor:pointer;
+    color:var(--text);
+    font-size:15px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .bigbtn span{color:var(--muted); font-size:12px;}
+  .bigbtn:hover{background: rgba(255,255,255,0.12);}
+
+  /* Memory */
+  .memory-grid{display:grid;gap:10px;margin-top:12px}
+  .mcard{
+    height:74px;border-radius:16px;border:1px solid var(--border);
+    background: rgba(0,0,0,0.28);
+    display:grid;place-items:center;
+    font-size:28px;cursor:pointer;user-select:none;
+  }
+  .mcard.revealed{background: rgba(255,255,255,0.10)}
+  .mcard.matched{background: rgba(66,209,125,0.18); border-color: rgba(66,209,125,0.55)}
+
+  /* Reaction */
+  .reaction-box{
+    margin-top:12px;height:160px;border-radius:20px;border:1px solid var(--border);
+    background: rgba(0,0,0,0.35);
+    display:grid;place-items:center;font-size:18px;user-select:none;
+  }
+  .reaction-box.wait{background: rgba(255,204,102,0.14); border-color: rgba(255,204,102,0.55)}
+  .reaction-box.go{background: rgba(66,209,125,0.16); border-color: rgba(66,209,125,0.55)}
+  .reaction-box.bad{background: rgba(255,91,122,0.14); border-color: rgba(255,91,122,0.55)}
+
+  /* Hidden object */
+  .hidden-grid{display:grid;gap:8px;margin-top:12px;touch-action: manipulation}
+  .hcell{
+    height:54px;border-radius:14px;border:1px solid var(--border);
+    background: rgba(0,0,0,0.28);
+    display:grid;place-items:center;
+    font-size:22px;cursor:pointer;user-select:none;
+  }
+  .hcell.good{background: rgba(66,209,125,0.18); border-color: rgba(66,209,125,0.60)}
+  .hcell.bad{background: rgba(255,91,122,0.14); border-color: rgba(255,91,122,0.60)}
+
+  /* Word search (simple, still playable later; currently shows grid + word list) */
+  .ws-grid{
+    display:grid;gap:4px;margin-top:12px;
+    padding:10px;border-radius:18px;border:1px solid var(--border);
+    background: rgba(0,0,0,0.22);
+    width: fit-content;
+    margin-left:auto;margin-right:auto;
+  }
+  .ws-cell{
+    width:38px;height:38px;border-radius:10px;border:1px solid var(--border);
+    background: rgba(255,255,255,0.06);
+    display:grid;place-items:center;
+    font-weight:800;
+    user-select:none;
+  }
+
+  /* Crossword */
+  .cw-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+  @media (max-width:900px){ .cw-wrap{grid-template-columns:1fr} }
+  .cw-grid{
+    display:grid;gap:3px;padding:10px;border-radius:18px;border:1px solid var(--border);
+    background: rgba(0,0,0,0.22);
+    width: fit-content;
+    margin-left:auto;margin-right:auto;
+  }
+  .cw-cell{
+    width:42px;height:42px;border-radius:10px;border:1px solid var(--border);
+    background: rgba(255,255,255,0.06);
+    display:grid;place-items:center;position:relative;
+  }
+  .cw-cell.block{
+    background: rgba(255,255,255,0.02);
+    border-color: rgba(255,255,255,0.04);
+  }
+  .cw-cell input{
+    width:100%;height:100%;
+    background: transparent;border:none;outline:none;
+    color:var(--text);
+    font-weight:900;font-size:18px;
+    text-align:center;text-transform:uppercase;
+  }
+  .cw-cell .num{
+    position:absolute;top:4px;left:6px;
+    font-size:10px;color: rgba(233,236,255,0.65);
+    user-select:none;
+  }
+  .cw-cell.good{outline:2px solid rgba(66,209,125,0.65)}
+  .cw-cell.bad{outline:2px solid rgba(255,91,122,0.65)}
+
+  footer{
+    padding:14px;
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+    border-top:1px solid var(--border);
+    background: rgba(15,18,32,.55);
+  }
 </style>
 </head>
 
 <body>
 <header>
-  <h1>🧠 Brain Games</h1>
-  <p>Easy → Hard brain boosters (all in English)</p>
+  <h1>🧠 Brain Games + Bible Study</h1>
+  <div class="sub">Games • Verse of the Day (365) • Proverbs (all chapters)</div>
 
-  <div class="tabs">
-    <button onclick="showView('home')">Home</button>
-    <button onclick="showView('memory')">Memory</button>
-    <button onclick="showView('reaction')">Reaction</button>
-    <button onclick="showView('scramble')">Scramble</button>
-    <button onclick="showView('math')">Math</button>
-    <button onclick="showView('hidden')">Hidden Object</button>
-    <button onclick="showView('wordsearch')">Word Search</button>
-    <button onclick="showView('crossword')">Crossword</button>
+  <div class="tabs" id="tabs">
+    <button data-view="home">Home</button>
+    <button data-view="memory">Memory</button>
+    <button data-view="reaction">Reaction</button>
+    <button data-view="scramble">Scramble</button>
+    <button data-view="math">Math</button>
+    <button data-view="hidden">Hidden Object</button>
+    <button data-view="wordsearch">Word Search</button>
+    <button data-view="crossword">Crossword</button>
+    <button class="primary" data-view="verse">📖 Verse of the Day</button>
+    <button class="primary" data-view="proverbs">📜 Proverbs</button>
   </div>
 </header>
 
 <main>
+  <!-- HOME -->
+  <section class="view active" id="view-home">
+    <div class="panel">
+      <div class="row space">
+        <div>
+          <h2 style="margin:0 0 6px 0;">Pick a game</h2>
+          <div class="muted">Games work offline. Bible tabs need internet (they fetch text).</div>
+        </div>
+        <div class="row">
+          <span class="pill">Difficulty</span>
+          <select id="difficultySelect">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+      </div>
 
-<section id="home" class="view active">
-  <h2>Choose a game above 👆</h2>
-  <p>Tip: Pick difficulty first, then press Start in each game.</p>
+      <div class="grid2">
+        <button class="bigbtn" data-go="memory">🃏 Memory Match <span>Match pairs fast</span></button>
+        <button class="bigbtn" data-go="reaction">⚡ Reaction Time <span>Click on green</span></button>
+        <button class="bigbtn" data-go="scramble">🔤 Word Scramble <span>New words, no repeats back-to-back</span></button>
+        <button class="bigbtn" data-go="math">➕ Quick Math <span>Speed questions</span></button>
+        <button class="bigbtn" data-go="hidden">🕵️ Hidden Object <span>Find the real target (fixed)</span></button>
+        <button class="bigbtn" data-go="wordsearch">🧩 Word Search <span>Quick grids</span></button>
+        <button class="bigbtn" data-go="crossword">🧠 Crossword <span>Playable mini crossword (fixed)</span></button>
+        <button class="bigbtn" data-go="verse">📖 Verse of the Day <span>Daily verse + quiz</span></button>
+        <button class="bigbtn" data-go="proverbs">📜 Proverbs <span>All chapters + quiz</span></button>
+      </div>
+    </div>
+  </section>
 
-  <div style="margin-top:15px">
-    Difficulty:
-    <select id="difficultySelect">
-      <option value="easy">Easy</option>
-      <option value="medium" selected>Medium</option>
-      <option value="hard">Hard</option>
-    </select>
-  </div>
-</section>
+  <!-- MEMORY -->
+  <section class="view" id="view-memory">
+    <div class="panel">
+      <div class="row space">
+        <h2 style="margin:0;">Memory Match</h2>
+        <button class="ghost" data-go="home">← Home</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button onclick="startMemory()">Start</button>
+        <span class="pill" id="memMeta">—</span>
+      </div>
+      <div class="memory-grid" id="memGrid"></div>
+    </div>
+  </section>
 
-<section id="memory" class="view">
-  <h2>Memory Match</h2>
-  <button onclick="startMemory()">Start Game</button>
-  <div id="memoryBoard" class="grid"></div>
-</section>
+  <!-- REACTION -->
+  <section class="view" id="view-reaction">
+    <div class="panel">
+      <div class="row space">
+        <h2 style="margin:0;">Reaction Time</h2>
+        <button class="ghost" data-go="home">← Home</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <select id="reactionMode">
+          <option value="single" selected>Single</option>
+          <option value="bestof5">Best of 5</option>
+        </select>
+        <button onclick="startReaction()">Start</button>
+        <span class="pill" id="reactionMeta">—</span>
+      </div>
+      <div class="reaction-box" id="reactionBox">Press Start</div>
+    </div>
+  </section>
 
-<section id="reaction" class="view">
-  <h2>Reaction Time</h2>
-  <button onclick="startReaction()">Start</button>
-  <div id="reactionBox">Press Start</div>
-  <p id="reactionResult"></p>
-</section>
+  <!-- SCRAMBLE -->
+  <section class="view" id="view-scramble">
+    <div class="panel">
+      <div class="row space">
+        <h2 style="margin:0;">Word Scramble</h2>
+        <button class="ghost" data-go="home">← Home</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button onclick="newScramble()">New Word</button>
+        <span class="pill" id="scrambleMeta">—</span>
+      </div>
+      <div class="panel" style="margin-top:12px;background: rgba(0,0,0,0.18);">
+        <div class="big" id="scrambleWord" style="letter-spacing:2px;font-weight:900;">—</div>
+        <div class="row" style="margin-top:10px;">
+          <input id="scrambleInput" placeholder="Type the real word…" autocomplete="off" />
+          <button onclick="checkScramble()">Check</button>
+        </div>
+        <div class="muted" id="scrambleResult"></div>
+      </div>
+    </div>
+  </section>
 
-<section id="scramble" class="view">
-  <h2>Word Scramble</h2>
-  <button onclick="newScramble()">New Word</button>
-  <h3 id="scrambledWord">—</h3>
-  <input id="scrambleInput" placeholder="Your guess">
-  <button onclick="checkScramble()">Check</button>
-  <p id="scrambleResult"></p>
-</section>
+  <!-- MATH -->
+  <section class="view" id="view-math">
+    <div class="panel">
+      <div class="row space">
+        <h2 style="margin:0;">Quick Math</h2>
+        <button class="ghost" data-go="home">← Home</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <select id="mathTimer">
+          <option value="30" selected>30 sec</option>
+          <option value="45">45 sec</option>
+          <option value="60">60 sec</option>
+        </select>
+        <button onclick="startMath()">Start</button>
+        <span class="pill" id="mathMeta">—</span>
+      </div>
 
-<section id="math" class="view">
-  <h2>Quick Math</h2>
-  <button onclick="newMath()">New Question</button>
-  <h3 id="mathQuestion">—</h3>
-  <input id="mathInput" type="number" placeholder="Answer">
-  <button onclick="checkMath()">Check</button>
-  <p id="mathResult"></p>
-</section>
+      <div class="panel" style="margin-top:12px;background: rgba(0,0,0,0.18);">
+        <div class="big" id="mathQ" style="font-size:22px;font-weight:900;">Press Start</div>
+        <div class="row" style="margin-top:10px;">
+          <input id="mathInput" placeholder="Answer…" inputmode="numeric" />
+          <button onclick="submitMath()">Submit</button>
+        </div>
+        <div class="muted" id="mathResult"></div>
+      </div>
+    </div>
+  </section>
 
-<section id="hidden" class="view">
-  <h2>Find the Hidden Object</h2>
-  <button onclick="startHidden()">Start</button>
-  <p>Find the ⭐ hidden somewhere!</p>
-  <div id="hiddenGrid" class="grid"></div>
-</section>
+  <!-- HIDDEN OBJECT -->
+  <section class="view" id="view-hidden">
+    <div class="panel">
+      <div class="row space">
+        <h2 style="margin:0;">Find the Hidden Object</h2>
+        <button class="ghost" data-go="home">← Home</button>
+      </div>
+      <div class="muted" style="margin-top:8px;">
+        Find and tap the <b id="hiddenTargetLabel">target</b> as fast as you can. Wrong taps get marked.
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button onclick="startHidden()">Start</button>
+        <span class="pill" id="hiddenMeta">—</span>
+      </div>
+      <div class="hidden-grid" id="hiddenGrid"></div>
+    </div>
+  </section>
 
-<section id="wordsearch" class="view">
-  <h2>Word Search</h2>
-  <button onclick="startWordSearch()">Generate Puzzle</button>
-  <div id="wordGrid" class="grid"></div>
-  <p id="wordList"></p>
-</section>
+  <!-- WORD SEARCH -->
+  <section class="view" id="view-wordsearch">
+    <div class="panel">
+      <div class="row space">
+        <h2 style="margin:0;">Word Search</h2>
+        <button class="ghost" data-go="home">← Home</button>
+      </div>
+      <div class="muted" style="margin-top:8px;">
+        This version generates grids + a word list (we can upgrade to drag-select + real word placement if you want).
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button onclick="newWordSearch()">New Puzzle</button>
+        <span class="pill" id="wsMeta">—</span>
+      </div>
+      <div class="ws-grid" id="wsGrid"></div>
+      <div class="muted" id="wsWords" style="margin-top:10px;"></div>
+    </div>
+  </section>
 
-<section id="crossword" class="view">
-  <h2>Mini Crossword</h2>
-  <button onclick="startCrossword()">Generate</button>
-  <div id="crossGrid" class="grid"></div>
-  <p id="crossClues"></p>
-</section>
+  <!-- CROSSWORD -->
+  <section class="view" id="view-crossword">
+    <div class="panel">
+      <div class="row space">
+        <h2 style="margin:0;">Crossword (Playable)</h2>
+        <button class="ghost" data-go="home">← Home</button>
+      </div>
+      <div class="muted" style="margin-top:8px;">
+        Tap a cell and type. Use <b>Check</b> to validate or <b>Reveal</b>.
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button onclick="newCrossword()">New Puzzle</button>
+        <button class="ghost" onclick="checkCrossword()">Check</button>
+        <button class="ghost" onclick="revealCrossword()">Reveal</button>
+        <span class="pill" id="cwMeta">—</span>
+      </div>
 
+      <div class="cw-wrap">
+        <div>
+          <div class="cw-grid" id="cwGrid"></div>
+        </div>
+        <div class="panel" style="margin:0;background: rgba(0,0,0,0.18);">
+          <h3 style="margin:0 0 8px 0;">Across</h3>
+          <ol id="cwAcross" class="muted" style="margin:0;padding-left:18px;"></ol>
+          <h3 style="margin:14px 0 8px 0;">Down</h3>
+          <ol id="cwDown" class="muted" style="margin:0;padding-left:18px;"></ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VERSE OF THE DAY -->
+  <section class="view" id="view-verse">
+    <div class="panel">
+      <div class="row space">
+        <h2 style="margin:0;">📖 Verse of the Day</h2>
+        <button class="ghost" data-go="home">← Home</button>
+      </div>
+
+      <div class="muted" style="margin-top:8px;">
+        Different every day (365-day schedule). Loads verse text online and generates a quiz from it.
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <span class="pill" id="vodRef">Reference: —</span>
+        <button onclick="loadVerseOfDay()">Refresh</button>
+        <span class="pill" id="vodStatus">—</span>
+      </div>
+
+      <div class="panel" style="margin-top:12px;background: rgba(0,0,0,0.18);">
+        <div class="big" id="vodText">Loading…</div>
+        <div class="muted" id="vodMeta" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="panel" style="margin-top:12px;background: rgba(0,0,0,0.18);">
+        <div class="row space">
+          <h3 style="margin:0;">Study Quiz</h3>
+          <div class="row">
+            <button class="ghost" onclick="resetVODQuiz()">Reset</button>
+            <button onclick="checkVODQuiz()">Check</button>
+          </div>
+        </div>
+        <div id="vodQuiz" style="margin-top:10px;"></div>
+        <div id="vodQuizResult" class="muted" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="panel" style="margin-top:12px;background: rgba(0,0,0,0.18);">
+        <h3 style="margin:0 0 8px 0;">Quick Reflection</h3>
+        <div class="muted">Write a takeaway + one action step. Saved locally on this device.</div>
+        <textarea id="vodNotes" placeholder="Today I learned… / Today I will…"></textarea>
+        <div class="row" style="margin-top:10px;">
+          <button onclick="saveNotes()">Save Notes</button>
+          <span class="pill" id="notesStatus">—</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- PROVERBS -->
+  <section class="view" id="view-proverbs">
+    <div class="panel">
+      <div class="row space">
+        <h2 style="margin:0;">📜 Proverbs (All Chapters)</h2>
+        <button class="ghost" data-go="home">← Home</button>
+      </div>
+
+      <div class="muted" style="margin-top:8px;">
+        Choose a chapter (1–31). Loads full text online. Create a quick quiz from the chapter.
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <span class="pill">Chapter</span>
+        <select id="provChapter"></select>
+        <button onclick="loadProverbs()">Load</button>
+        <button class="ghost" onclick="makeProverbsQuiz()">Create Quiz</button>
+        <span class="pill" id="provStatus">—</span>
+      </div>
+
+      <div class="panel" style="margin-top:12px;background: rgba(0,0,0,0.18);">
+        <span class="pill" id="provRef">Proverbs —</span>
+        <div class="big" id="provText" style="margin-top:10px;">Pick a chapter and press Load.</div>
+      </div>
+
+      <div class="panel" style="margin-top:12px;background: rgba(0,0,0,0.18);">
+        <div class="row space">
+          <h3 style="margin:0;">Proverbs Study Quiz</h3>
+          <div class="row">
+            <button class="ghost" onclick="resetProvQuiz()">Reset</button>
+            <button onclick="checkProvQuiz()">Check</button>
+          </div>
+        </div>
+        <div id="provQuiz" style="margin-top:10px;" class="muted">Press “Create Quiz”.</div>
+        <div id="provQuizResult" class="muted" style="margin-top:10px;"></div>
+      </div>
+
+    </div>
+  </section>
 </main>
 
+<footer>Made for quick brain boosts ✨</footer>
+
 <script>
-function showView(id){
-  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-}
+/* ---------------- Helpers + Nav ---------------- */
+const $ = (s)=>document.querySelector(s);
+const $$ = (s)=>Array.from(document.querySelectorAll(s));
 
-function difficulty(){
-  return document.getElementById("difficultySelect").value;
-}
+function diff(){ return $("#difficultySelect").value; }
 
-/* MEMORY */
+function showView(name){
+  $$(".view").forEach(v=>v.classList.remove("active"));
+  $(`#view-${name}`).classList.add("active");
+}
+$("#tabs").addEventListener("click", (e)=>{
+  const btn = e.target.closest("button[data-view]");
+  if(!btn) return;
+  showView(btn.dataset.view);
+});
+document.body.addEventListener("click", (e)=>{
+  const go = e.target.closest("[data-go]");
+  if(!go) return;
+  showView(go.dataset.go);
+});
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+/* =========================================================
+   1) MEMORY MATCH (working)
+========================================================= */
+const memoryEmojis = ["🍓","🍋","🍉","🍇","🍒","🍑","🥝","🍍","🍩","🍪","🍫","🧁","🍔","🍟","🌮","🍕","🥨","🍿","🧋","☕️","🦋","🌸","⭐️","🌙","⚽️","🎧","🎮","📸","🧠","🧩"];
+
+let mem = { started:false, start:0, moves:0, lock:false, first:null, matched:0, pairs:0 };
+
+function memoryDims(d){
+  if(d==="easy") return {cols:4, rows:3};
+  if(d==="hard") return {cols:6, rows:4};
+  return {cols:4, rows:4};
+}
 function startMemory(){
-  const board=document.getElementById("memoryBoard");
-  board.innerHTML="";
-  let size = (difficulty()=="easy")?8:(difficulty()=="medium")?12:18;
-  let emojis=["🍎","🍌","🍇","🍓","🍒","🥝","🍍","🥕","🌽","🍩","🍪","🍫"];
+  const {cols, rows} = memoryDims(diff());
+  const total = cols*rows;
+  const pairs = Math.floor(total/2);
+  const pool = shuffle(memoryEmojis).slice(0,pairs);
+  const deck = shuffle([...pool,...pool]);
 
-  let pairs = size/2;
-  let arr=[...emojis.slice(0,pairs),...emojis.slice(0,pairs)]
-    .sort(()=>Math.random()-0.5);
+  mem = { started:true, start: performance.now(), moves:0, lock:false, first:null, matched:0, pairs };
 
-  let first=null, lock=false;
+  const grid = $("#memGrid");
+  grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0,1fr))`;
+  grid.innerHTML = deck.map((em, idx)=>`
+    <div class="mcard" data-emoji="${em}" data-idx="${idx}">
+      <span class="face" style="display:none">${em}</span>
+      <span class="back">❓</span>
+    </div>
+  `).join("");
 
-  arr.forEach(e=>{
-    let card=document.createElement("div");
-    card.className="card";
-    card.textContent="❓";
-    card.dataset.emoji=e;
-    card.onclick=()=>{
-      if(lock || card.classList.contains("done") || card===first) return;
-      card.textContent=card.dataset.emoji;
-
-      if(!first){
-        first=card;
-      } else {
-        if(first.dataset.emoji===card.dataset.emoji){
-          first.classList.add("done");
-          card.classList.add("done");
-          first=null;
-        } else {
-          lock=true;
-          setTimeout(()=>{
-            first.textContent="❓";
-            card.textContent="❓";
-            first=null;
-            lock=false;
-          },550);
-        }
-      }
-    };
-    board.appendChild(card);
-  });
+  $("#memMeta").textContent = `Moves: 0 • Pairs: ${pairs}`;
 }
+function memReveal(card, on){
+  const face = card.querySelector(".face");
+  const back = card.querySelector(".back");
+  if(on){
+    card.classList.add("revealed");
+    face.style.display="block"; back.style.display="none";
+  }else{
+    card.classList.remove("revealed");
+    face.style.display="none"; back.style.display="block";
+  }
+}
+$("#memGrid").addEventListener("click", async (e)=>{
+  const card = e.target.closest(".mcard");
+  if(!card || !mem.started || mem.lock) return;
+  if(card.classList.contains("matched")) return;
+  if(mem.first && mem.first === card) return;
 
-/* REACTION */
-let reactionTimer=null;
-function startReaction(){
-  const box=document.getElementById("reactionBox");
-  const res=document.getElementById("reactionResult");
-  res.textContent="";
-  box.style.background="#c0392b";
-  box.textContent="Wait...";
-  box.onclick=null;
+  memReveal(card,true);
 
-  if(reactionTimer) clearTimeout(reactionTimer);
+  if(!mem.first){ mem.first = card; return; }
 
-  const wait = Math.random()*2500 + 1200;
-  reactionTimer=setTimeout(()=>{
-    const start=Date.now();
-    box.style.background="#27ae60";
-    box.textContent="CLICK!";
-    box.onclick=()=>{
-      const t=Date.now()-start;
-      res.textContent=`✅ ${t} ms`;
-      box.style.background="#34495e";
-      box.textContent="Press Start";
-    };
-  },wait);
+  mem.moves++;
+  $("#memMeta").textContent = `Moves: ${mem.moves} • Pairs: ${mem.pairs}`;
 
-  box.onclick=()=>{
-    // clicked too early
-    if(box.textContent==="Wait..."){
-      clearTimeout(reactionTimer);
-      box.style.background="#8e44ad";
-      box.textContent="Too soon 😭";
-      res.textContent="False start. Press Start again.";
-      box.onclick=null;
+  const a = mem.first.dataset.emoji;
+  const b = card.dataset.emoji;
+
+  if(a===b){
+    mem.first.classList.add("matched");
+    card.classList.add("matched");
+    mem.first = null;
+    mem.matched++;
+    if(mem.matched === mem.pairs){
+      const secs = Math.round((performance.now()-mem.start)/1000);
+      $("#memMeta").textContent = `✅ Completed in ${secs}s • Moves: ${mem.moves}`;
+      mem.started = false;
     }
-  };
+  }else{
+    mem.lock = true;
+    const first = mem.first;
+    mem.first = null;
+    await new Promise(r=>setTimeout(r, 650));
+    memReveal(first,false);
+    memReveal(card,false);
+    mem.lock = false;
+  }
+});
+
+/* =========================================================
+   2) REACTION TIME (working)
+========================================================= */
+let reaction = { running:false, waiting:false, canClick:false, t0:0, timer:null, results:[] };
+
+function setReactionBox(text, cls){
+  const box = $("#reactionBox");
+  box.className = "reaction-box";
+  if(cls) box.classList.add(cls);
+  box.textContent = text;
+}
+function startReaction(){
+  reaction.running = true;
+  reaction.waiting = true;
+  reaction.canClick = false;
+  reaction.results = [];
+  $("#reactionMeta").textContent = "—";
+  scheduleReaction();
+}
+function scheduleReaction(){
+  const delay = randInt(900, 2600);
+  setReactionBox("Wait for green…","wait");
+  clearTimeout(reaction.timer);
+  reaction.timer = setTimeout(()=>{
+    reaction.waiting = false;
+    reaction.canClick = true;
+    reaction.t0 = performance.now();
+    setReactionBox("CLICK!","go");
+  }, delay);
+}
+function finishReaction(ms){
+  const mode = $("#reactionMode").value;
+  reaction.results.push(ms);
+
+  if(mode==="single"){
+    $("#reactionMeta").textContent = `✅ ${Math.round(ms)} ms`;
+    reaction.running = false;
+    reaction.canClick = false;
+    setReactionBox("Press Start","");
+    return;
+  }
+  if(reaction.results.length >= 5){
+    const best = Math.min(...reaction.results);
+    const avg = reaction.results.reduce((a,b)=>a+b,0)/reaction.results.length;
+    $("#reactionMeta").textContent = `✅ Best ${Math.round(best)} ms • Avg ${Math.round(avg)} ms`;
+    reaction.running = false;
+    reaction.canClick = false;
+    setReactionBox("Press Start","");
+    return;
+  }
+  $("#reactionMeta").textContent = `Round ${reaction.results.length}/5: ${Math.round(ms)} ms`;
+  scheduleReaction();
+}
+$("#reactionBox").addEventListener("click", ()=>{
+  if(!reaction.running) return;
+  if(reaction.waiting){
+    clearTimeout(reaction.timer);
+    setReactionBox("Too soon 😭","bad");
+    $("#reactionMeta").textContent = "False start — press Start again.";
+    reaction.running = false;
+    reaction.waiting = false;
+    reaction.canClick = false;
+    return;
+  }
+  if(reaction.canClick){
+    reaction.canClick = false;
+    const ms = performance.now() - reaction.t0;
+    finishReaction(ms);
+  }
+});
+
+/* =========================================================
+   3) WORD SCRAMBLE (MORE WORDS + NO BACK-TO-BACK REPEATS)
+========================================================= */
+const scrambleWords = {
+  easy: [
+    "apple","house","music","green","happy","chair","water","smile","train","pencil","camera","coffee","family","friend","summer","winter",
+    "orange","purple","window","garden","cookie","button","morning","evening","little","simple","bright","laugh","ticket","flower","cloud"
+  ],
+  medium: [
+    "balance","journal","pattern","memory","curious","problem","progress","picture","project","capture","comfort","plastic","default","example",
+    "routine","network","message","improve","between","desktop","website","browser","upgrade","practice","profile","breathe","forward","remark","quality"
+  ],
+  hard: [
+    "consequence","extraordinary","misunderstanding","unpredictable","transformation","configuration","rehabilitation","psychological","incomparable",
+    "responsibility","recommendation","implementation","characteristic","communication","interpretation","acknowledgment","determination","consideration"
+  ]
+};
+
+let scrambleState = { answer:"", lastByDiff:{ easy:null, medium:null, hard:null } };
+
+function scrambleLetters(word){
+  const a = word.split("");
+  let s = word;
+  for(let i=0;i<25 && s===word;i++){
+    s = shuffle(a).join("");
+  }
+  return s.toUpperCase();
 }
 
-/* SCRAMBLE */
-const wordBank = {
-  easy:["brain","focus","puzzle","logic","learn","smart","habit","calm"],
-  medium:["balance","journal","pattern","memory","capture","curious","problem","progress"],
-  hard:["consequence","extraordinary","misunderstanding","unpredictable","transformation","configuration"]
-};
-let currentWord="";
+function pickNewScrambleWord(level){
+  const pool = scrambleWords[level];
+  const last = scrambleState.lastByDiff[level];
+  if(pool.length === 1) return pool[0];
+
+  let w = pool[Math.floor(Math.random()*pool.length)];
+  if(w === last){
+    // pick a different one
+    let tries = 0;
+    while(w === last && tries < 20){
+      w = pool[Math.floor(Math.random()*pool.length)];
+      tries++;
+    }
+  }
+  scrambleState.lastByDiff[level] = w;
+  return w;
+}
+
 function newScramble(){
-  const diff=difficulty();
-  currentWord = wordBank[diff][Math.floor(Math.random()*wordBank[diff].length)];
-  let scrambled=currentWord.split("").sort(()=>Math.random()-0.5).join("");
-  if(scrambled===currentWord) scrambled=scrambled.split("").reverse().join("");
-  document.getElementById("scrambledWord").textContent=scrambled.toUpperCase();
-  document.getElementById("scrambleResult").textContent="";
-  document.getElementById("scrambleInput").value="";
+  const level = diff();
+  const w = pickNewScrambleWord(level);
+  scrambleState.answer = w;
+  $("#scrambleWord").textContent = scrambleLetters(w);
+  $("#scrambleInput").value = "";
+  $("#scrambleResult").textContent = "";
+  $("#scrambleMeta").textContent = `Difficulty: ${level}`;
 }
 function checkScramble(){
-  const guess=document.getElementById("scrambleInput").value.trim().toLowerCase();
-  document.getElementById("scrambleResult").textContent =
-    guess===currentWord ? "✅ Correct!" : "❌ Try again!";
-}
-
-/* MATH */
-let mathAnswer=0;
-function newMath(){
-  let a,b,op;
-  if(difficulty()=="easy"){
-    a=Math.floor(Math.random()*15); b=Math.floor(Math.random()*15); op="+";
-    mathAnswer=a+b;
-  } else if(difficulty()=="medium"){
-    a=Math.floor(Math.random()*30); b=Math.floor(Math.random()*20);
-    op=Math.random()<0.5?"+":"-";
-    mathAnswer = op==="+" ? a+b : a-b;
-  } else {
-    a=Math.floor(Math.random()*12)+2; b=Math.floor(Math.random()*12)+2;
-    op=Math.random()<0.5?"×":"÷";
-    if(op==="×"){ mathAnswer=a*b; }
-    else { mathAnswer=a; a=a*b; } // make divisible
+  const guess = ($("#scrambleInput").value || "").trim().toLowerCase();
+  if(!scrambleState.answer){
+    $("#scrambleResult").textContent = "Press New Word first.";
+    return;
   }
-  document.getElementById("mathQuestion").textContent = `${a} ${op} ${b} = ?`;
-  document.getElementById("mathResult").textContent="";
-  document.getElementById("mathInput").value="";
-}
-function checkMath(){
-  const val = Number(document.getElementById("mathInput").value);
-  document.getElementById("mathResult").textContent =
-    val===mathAnswer ? "✅ Correct!" : `❌ Nope. Answer: ${mathAnswer}`;
+  if(guess === scrambleState.answer){
+    $("#scrambleResult").textContent = "✅ Correct!";
+  }else{
+    $("#scrambleResult").textContent = `❌ Not quite. Try again.`;
+  }
 }
 
-/* HIDDEN OBJECT */
+/* =========================================================
+   4) QUICK MATH (timed)
+========================================================= */
+let math = { running:false, endAt:0, score:0, q:null, ans:0, timer:null };
+
+function makeMathQ(level){
+  let a,b,op,ans;
+  if(level==="easy"){
+    a=randInt(0,20); b=randInt(0,20);
+    op = Math.random()<0.5?"+":"-";
+    ans = (op==="+") ? a+b : a-b;
+  }else if(level==="medium"){
+    const r = Math.random();
+    if(r<0.35){
+      a=randInt(5,40); b=randInt(5,40); op="+";
+      ans=a+b;
+    }else if(r<0.7){
+      a=randInt(10,60); b=randInt(5,40); op="-";
+      ans=a-b;
+    }else{
+      a=randInt(2,12); b=randInt(2,12); op="×";
+      ans=a*b;
+    }
+  }else{
+    const r = Math.random();
+    if(r<0.4){
+      a=randInt(12,99); b=randInt(12,99); op="+";
+      ans=a+b;
+    }else if(r<0.75){
+      a=randInt(20,120); b=randInt(10,99); op="-";
+      ans=a-b;
+    }else{
+      // division with clean results
+      b=randInt(2,12); ans=randInt(2,12);
+      a=b*ans; op="÷";
+    }
+  }
+  return { text:`${a} ${op} ${b} = ?`, ans };
+}
+
+function setMathMeta(){
+  if(!math.running){ $("#mathMeta").textContent = "—"; return; }
+  const left = Math.max(0, Math.ceil((math.endAt - performance.now())/1000));
+  $("#mathMeta").textContent = `Score: ${math.score} • Time: ${left}s`;
+}
+
+function nextMathQ(){
+  const q = makeMathQ(diff());
+  math.q = q.text;
+  math.ans = q.ans;
+  $("#mathQ").textContent = q.text;
+  $("#mathInput").value = "";
+  $("#mathInput").focus();
+}
+
+function startMath(){
+  math.running = true;
+  math.score = 0;
+  const secs = Number($("#mathTimer").value || "30");
+  math.endAt = performance.now() + secs*1000;
+  $("#mathResult").textContent = "";
+  nextMathQ();
+  setMathMeta();
+  clearInterval(math.timer);
+  math.timer = setInterval(()=>{
+    if(performance.now() >= math.endAt){
+      clearInterval(math.timer);
+      math.running = false;
+      $("#mathQ").textContent = "Done ✅";
+      $("#mathResult").textContent = `Final score: ${math.score}`;
+      setMathMeta();
+      return;
+    }
+    setMathMeta();
+  }, 200);
+}
+function submitMath(){
+  if(!math.running) return;
+  const val = Number($("#mathInput").value);
+  if(Number.isFinite(val) && val === math.ans){
+    math.score++;
+    $("#mathResult").textContent = "✅ Correct!";
+  }else{
+    $("#mathResult").textContent = `❌ Answer: ${math.ans}`;
+  }
+  nextMathQ();
+  setMathMeta();
+}
+$("#mathInput").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter") submitMath();
+});
+
+/* =========================================================
+   5) HIDDEN OBJECT (FIXED)
+========================================================= */
+let hidden = { running:false, target:"", start:0 };
+
+function hiddenConfig(level){
+  if(level==="easy") return { cols:6, rows:4, targetChance:0.08 };
+  if(level==="hard") return { cols:10, rows:6, targetChance:0.02 };
+  return { cols:8, rows:5, targetChance:0.04 }; // medium
+}
+
 function startHidden(){
-  const grid=document.getElementById("hiddenGrid");
-  grid.innerHTML="";
-  let size = (difficulty()=="easy")?24:(difficulty()=="medium")?36:48;
-  let hidden = Math.floor(Math.random()*size);
-  let started = Date.now();
+  const level = diff();
+  const {cols, rows} = hiddenConfig(level);
+  const total = cols*rows;
 
-  for(let i=0;i<size;i++){
-    let cell=document.createElement("div");
-    cell.className="card";
-    cell.textContent="⬜";
-    cell.onclick=()=>{
-      if(i===hidden){
-        const ms = Date.now()-started;
-        cell.textContent="⭐";
-        cell.style.background="#27ae60";
-        setTimeout(()=>alert(`✅ Found it in ${ms} ms!`),100);
-      } else {
-        cell.textContent="▫️";
+  // choose a target + distractor set
+  // similar-looking sets so it's actually "hidden"
+  const sets = [
+    { target:"⭐", distract:["✦","✧","✨","🌟","⋆"] },
+    { target:"🔍", distract:["🔎","🧿","📎","🧲","🧩"] },
+    { target:"🧠", distract:["🫀","🫁","💭","🧩","🎯"] },
+    { target:"❤️", distract:["💗","💖","💞","💓","💕"] },
+    { target:"🐱", distract:["🐈","🐯","🦊","🐶","🐭"] },
+  ];
+  const chosen = sets[Math.floor(Math.random()*sets.length)];
+  hidden.target = chosen.target;
+  hidden.running = true;
+  hidden.start = performance.now();
+
+  $("#hiddenTargetLabel").textContent = hidden.target;
+  $("#hiddenMeta").textContent = `Difficulty: ${level} • Find ${hidden.target}`;
+
+  const grid = $("#hiddenGrid");
+  grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+  grid.innerHTML = "";
+
+  // pick target position
+  const targetIdx = Math.floor(Math.random()*total);
+
+  for(let i=0;i<total;i++){
+    const cell = document.createElement("div");
+    cell.className = "hcell";
+
+    // Fill with distractors; target is only one cell
+    const val = (i===targetIdx) ? chosen.target : chosen.distract[Math.floor(Math.random()*chosen.distract.length)];
+    cell.textContent = val;
+
+    cell.addEventListener("click", ()=>{
+      if(!hidden.running) return;
+      if(i===targetIdx){
+        hidden.running = false;
+        cell.classList.add("good");
+        const ms = Math.round(performance.now() - hidden.start);
+        $("#hiddenMeta").textContent = `✅ Found ${hidden.target} in ${ms} ms`;
+        // mark all cells non-clicky by stopping the state
+      }else{
+        cell.classList.add("bad");
       }
-    };
+    });
+
     grid.appendChild(cell);
   }
 }
 
-/* WORD SEARCH (simple grid generator) */
-function startWordSearch(){
+/* =========================================================
+   6) WORD SEARCH (simple generator)
+========================================================= */
+function wsConfig(level){
+  if(level==="easy") return { size:10, words:["BRAIN","LOGIC","FOCUS"] };
+  if(level==="hard") return { size:14, words:["TRANSFORM","CONSEQUENCE","PATTERN","DISCIPLINE"] };
+  return { size:12, words:["MEMORY","PUZZLE","HABIT","CALM"] };
+}
+function newWordSearch(){
+  const {size, words} = wsConfig(diff());
+  $("#wsMeta").textContent = `Grid: ${size}×${size} • Difficulty: ${diff()}`;
+  $("#wsWords").textContent = "Find: " + words.join(", ");
+
   const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const grid=document.getElementById("wordGrid");
-  grid.innerHTML="";
-
-  let size = (difficulty()=="easy")?36:(difficulty()=="medium")?49:64;
-  let cols = Math.round(Math.sqrt(size));
-  grid.style.gridTemplateColumns=`repeat(${cols},60px)`;
-
-  for(let i=0;i<size;i++){
-    let cell=document.createElement("div");
-    cell.className="card";
-    cell.textContent=letters[Math.floor(Math.random()*26)];
+  const grid = $("#wsGrid");
+  grid.style.gridTemplateColumns = `repeat(${size}, 38px)`;
+  grid.innerHTML = "";
+  // Just random letters (upgrade later to real placement)
+  for(let i=0;i<size*size;i++){
+    const cell = document.createElement("div");
+    cell.className = "ws-cell";
+    cell.textContent = letters[Math.floor(Math.random()*26)];
     grid.appendChild(cell);
   }
-
-  const list = (difficulty()=="easy") ? "Find: BRAIN, LOGIC"
-             : (difficulty()=="medium") ? "Find: MEMORY, FOCUS, PUZZLE"
-             : "Find: TRANSFORM, PATTERN, CONSEQUENCE";
-  document.getElementById("wordList").textContent=list;
 }
 
-/* CROSSWORD (placeholder mini) */
-function startCrossword(){
-  const grid=document.getElementById("crossGrid");
-  grid.innerHTML="";
-  let cols=5;
-  grid.style.gridTemplateColumns=`repeat(${cols},60px)`;
+/* =========================================================
+   7) CROSSWORD (FIXED + PLAYABLE)
+========================================================= */
+const crosswordPuzzles = {
+  easy: [
+    {
+      size: 5,
+      grid: [
+        "HELLO",
+        "A###E",
+        "PIZZA",
+        "P###R",
+        "SMILE"
+      ],
+      across: [
+        {r:0,c:0, clue:"A friendly greeting"},
+        {r:2,c:0, clue:"Cheesy round food (often delivered)"},
+        {r:4,c:0, clue:"A happy facial expression"}
+      ],
+      down: [
+        {r:0,c:0, clue:"A smartphone application"},
+        {r:0,c:4, clue:"Opposite of 'lose'"},
+        {r:2,c:0, clue:"A small dog sound (often 'yip') — (hint: 5 letters)"} // playful
+      ]
+    }
+  ],
+  medium: [
+    {
+      size: 7,
+      grid: [
+        "FOCUS##",
+        "O###A##",
+        "CARRY##",
+        "U###T##",
+        "SPEED##",
+        "##B###E",
+        "##MIND#"
+      ],
+      across: [
+        {r:0,c:0, clue:"Concentration"},
+        {r:2,c:0, clue:"To hold or transport"},
+        {r:4,c:0, clue:"Fastness"},
+        {r:6,c:2, clue:"Your thinking center (4 letters)"}
+      ],
+      down: [
+        {r:0,c:0, clue:"Opposite of 'blur' (5 letters)"},
+        {r:0,c:4, clue:"First letter of the alphabet (1 letter)"},
+        {r:2,c:4, clue:"A common beverage (3 letters)"} // "TEA" by layout
+      ]
+    }
+  ],
+  hard: [
+    {
+      size: 7,
+      grid: [
+        "WISDOM#",
+        "I###E##",
+        "SAVOR##",
+        "D###R##",
+        "ORDER##",
+        "M#####A",
+        "#REASON"
+      ],
+      across: [
+        {r:0,c:0, clue:"Good judgment"},
+        {r:2,c:0, clue:"Enjoy slowly (taste/appreciate)"},
+        {r:4,c:0, clue:"Arrangement or command"},
+        {r:6,c:1, clue:"Logic; rational thinking"}
+      ],
+      down: [
+        {r:0,c:0, clue:"A personal pronoun"},
+        {r:0,c:4, clue:"A vowel (one of A/E/I/O/U)"},
+        {r:4,c:4, clue:"Opposite of chaos (5 letters)"}
+      ]
+    }
+  ]
+};
 
-  const answers = (difficulty()=="easy") ? "BRAIN"
-                : (difficulty()=="medium") ? "FOCUS"
-                : "LOGIC";
+let cwState = { puzzle:null, solution:null, cells:[], size:0 };
 
-  for(let i=0;i<25;i++){
-    let cell=document.createElement("div");
-    cell.className="card";
-    cell.textContent = answers[i%answers.length];
-    grid.appendChild(cell);
+function getPuzzle(){
+  const level = diff();
+  const list = crosswordPuzzles[level] || crosswordPuzzles.medium;
+  return list[Math.floor(Math.random()*list.length)];
+}
+
+function isBlock(ch){ return ch === "#"; }
+
+function buildNumbers(grid, size){
+  // numbering where an across or down starts
+  const nums = Array.from({length:size}, ()=>Array(size).fill(0));
+  let n = 1;
+
+  function cellAt(r,c){ return grid[r][c]; }
+  for(let r=0;r<size;r++){
+    for(let c=0;c<size;c++){
+      if(isBlock(cellAt(r,c))) continue;
+
+      const startAcross = (c===0 || isBlock(cellAt(r,c-1))) && (c+1<size && !isBlock(cellAt(r,c+1)));
+      const startDown   = (r===0 || isBlock(cellAt(r-1,c))) && (r+1<size && !isBlock(cellAt(r+1,c)));
+
+      if(startAcross || startDown){
+        nums[r][c] = n++;
+      }
+    }
+  }
+  return nums;
+}
+
+function newCrossword(){
+  const p = getPuzzle();
+  cwState.puzzle = p;
+  cwState.size = p.size;
+
+  const gridRows = p.grid;
+  // solution is the letters (non-block)
+  cwState.solution = gridRows.map(row => row.split(""));
+  const nums = buildNumbers(cwState.solution, p.size);
+
+  const gridEl = $("#cwGrid");
+  gridEl.style.gridTemplateColumns = `repeat(${p.size}, 42px)`;
+  gridEl.innerHTML = "";
+  cwState.cells = [];
+
+  for(let r=0;r<p.size;r++){
+    for(let c=0;c<p.size;c++){
+      const ch = cwState.solution[r][c];
+      const cell = document.createElement("div");
+      cell.className = "cw-cell";
+
+      if(isBlock(ch)){
+        cell.classList.add("block");
+        gridEl.appendChild(cell);
+        cwState.cells.push({ r,c, block:true, el:cell, input:null });
+        continue;
+      }
+
+      const num = nums[r][c];
+      if(num){
+        const badge = document.createElement("div");
+        badge.className = "num";
+        badge.textContent = String(num);
+        cell.appendChild(badge);
+      }
+
+      const inp = document.createElement("input");
+      inp.maxLength = 1;
+      inp.autocomplete="off";
+      inp.spellcheck = false;
+      inp.addEventListener("input", ()=>{
+        inp.value = (inp.value || "").toUpperCase().replace(/[^A-Z]/g,"");
+        cell.classList.remove("good","bad");
+        // auto-move to next cell to the right if typed
+        if(inp.value){
+          focusNextCell(r,c);
+        }
+      });
+      inp.addEventListener("keydown", (e)=>{
+        if(e.key==="Backspace" && !inp.value){
+          focusPrevCell(r,c);
+        }
+        // arrow navigation
+        if(e.key==="ArrowRight") { e.preventDefault(); focusNextCell(r,c); }
+        if(e.key==="ArrowLeft")  { e.preventDefault(); focusPrevCell(r,c); }
+        if(e.key==="ArrowDown")  { e.preventDefault(); focusDownCell(r,c); }
+        if(e.key==="ArrowUp")    { e.preventDefault(); focusUpCell(r,c); }
+      });
+
+      cell.appendChild(inp);
+      gridEl.appendChild(cell);
+      cwState.cells.push({ r,c, block:false, el:cell, input:inp });
+    }
   }
 
-  document.getElementById("crossClues").textContent =
-    (difficulty()=="easy") ? "Clue: Think organ"
-    : (difficulty()=="medium") ? "Clue: Concentration"
-    : "Clue: Reasoning skill";
+  // clues
+  $("#cwAcross").innerHTML = p.across.map(item => `<li><b>(${item.r+1},${item.c+1})</b> ${item.clue}</li>`).join("");
+  $("#cwDown").innerHTML = p.down.map(item => `<li><b>(${item.r+1},${item.c+1})</b> ${item.clue}</li>`).join("");
+  $("#cwMeta").textContent = `Difficulty: ${diff()} • ${p.size}×${p.size}`;
+
+  // focus first open cell
+  const first = cwState.cells.find(x=>!x.block);
+  if(first && first.input) first.input.focus();
 }
+
+function cellObj(r,c){
+  return cwState.cells.find(x=>x.r===r && x.c===c);
+}
+function focusNextCell(r,c){
+  // next cell to the right in same row that isn't block; else scan forward
+  for(let cc=c+1; cc<cwState.size; cc++){
+    const obj = cellObj(r,cc);
+    if(obj && !obj.block){ obj.input.focus(); return; }
+  }
+  // fallback: next row first open
+  for(let rr=r+1; rr<cwState.size; rr++){
+    for(let cc=0; cc<cwState.size; cc++){
+      const obj = cellObj(rr,cc);
+      if(obj && !obj.block){ obj.input.focus(); return; }
+    }
+  }
+}
+function focusPrevCell(r,c){
+  for(let cc=c-1; cc>=0; cc--){
+    const obj = cellObj(r,cc);
+    if(obj && !obj.block){ obj.input.focus(); return; }
+  }
+  for(let rr=r-1; rr>=0; rr--){
+    for(let cc=cwState.size-1; cc>=0; cc--){
+      const obj = cellObj(rr,cc);
+      if(obj && !obj.block){ obj.input.focus(); return; }
+    }
+  }
+}
+function focusDownCell(r,c){
+  for(let rr=r+1; rr<cwState.size; rr++){
+    const obj = cellObj(rr,c);
+    if(obj && !obj.block){ obj.input.focus(); return; }
+    if(obj && obj.block) break;
+  }
+}
+function focusUpCell(r,c){
+  for(let rr=r-1; rr>=0; rr--){
+    const obj = cellObj(rr,c);
+    if(obj && !obj.block){ obj.input.focus(); return; }
+    if(obj && obj.block) break;
+  }
+}
+
+function checkCrossword(){
+  if(!cwState.puzzle){ $("#cwMeta").textContent = "Press New Puzzle first."; return; }
+  let correct=0, total=0;
+  for(const cell of cwState.cells){
+    if(cell.block) continue;
+    total++;
+    const expected = cwState.solution[cell.r][cell.c];
+    const got = (cell.input.value || "").toUpperCase();
+    cell.el.classList.remove("good","bad");
+    if(got && got === expected){
+      cell.el.classList.add("good");
+      correct++;
+    }else{
+      cell.el.classList.add("bad");
+    }
+  }
+  if(correct===total) $("#cwMeta").textContent = `✅ Solved! ${correct}/${total}`;
+  else $("#cwMeta").textContent = `Checked: ${correct}/${total} correct`;
+}
+function revealCrossword(){
+  if(!cwState.puzzle) return;
+  for(const cell of cwState.cells){
+    if(cell.block) continue;
+    cell.input.value = cwState.solution[cell.r][cell.c];
+    cell.el.classList.remove("bad");
+    cell.el.classList.add("good");
+  }
+  $("#cwMeta").textContent = "Revealed ✅";
+}
+
+/* =========================================================
+   BIBLE: Verse of the Day (365 schedule) + auto quiz
+========================================================= */
+const BIBLE_TRANSLATION = "kjv";
+const API_BASE = "https://bible-api.com/";
+
+const VOD_REF_POOL = [
+  // Proverbs highlights
+  "Proverbs 1:7","Proverbs 2:6","Proverbs 3:5-6","Proverbs 4:23","Proverbs 6:6-8","Proverbs 9:10",
+  "Proverbs 10:12","Proverbs 11:25","Proverbs 12:1","Proverbs 13:20","Proverbs 14:29","Proverbs 15:1",
+  "Proverbs 16:3","Proverbs 17:17","Proverbs 18:10","Proverbs 19:21","Proverbs 20:22","Proverbs 21:21",
+  "Proverbs 22:6","Proverbs 23:17-18","Proverbs 24:16","Proverbs 25:11","Proverbs 27:17","Proverbs 28:13",
+  "Proverbs 29:11","Proverbs 30:5","Proverbs 31:25-26",
+
+  // Psalms
+  "Psalm 1:1-2","Psalm 16:8","Psalm 19:14","Psalm 23:1","Psalm 27:1","Psalm 34:8","Psalm 37:4","Psalm 46:1",
+  "Psalm 51:10","Psalm 55:22","Psalm 62:1-2","Psalm 73:26","Psalm 84:11","Psalm 91:1-2","Psalm 94:19",
+  "Psalm 100:4-5","Psalm 103:8","Psalm 119:105","Psalm 121:1-2","Psalm 139:23-24",
+
+  // Gospels
+  "Matthew 5:14-16","Matthew 6:33","Matthew 11:28-30","Matthew 22:37-39","Matthew 28:19-20",
+  "Mark 10:45","Luke 1:37","Luke 6:31","Luke 11:9","Luke 15:7","John 1:1","John 3:16","John 8:12",
+  "John 10:10","John 11:25-26","John 13:34-35","John 14:6","John 14:27","John 15:5","John 16:33",
+
+  // Acts + Romans
+  "Acts 1:8","Acts 2:38","Acts 4:12","Acts 16:31",
+  "Romans 1:16","Romans 3:23-24","Romans 5:8","Romans 6:23","Romans 8:1","Romans 8:28",
+  "Romans 10:9-10","Romans 12:1-2","Romans 12:18",
+
+  // Letters
+  "1 Corinthians 10:13","1 Corinthians 13:4-7","1 Corinthians 15:58",
+  "2 Corinthians 5:17","2 Corinthians 12:9",
+  "Galatians 5:22-23","Galatians 6:9",
+  "Ephesians 2:8-9","Ephesians 4:29","Ephesians 6:10-11",
+  "Philippians 1:6","Philippians 4:6-7","Philippians 4:13","Philippians 4:19",
+  "Colossians 3:12-14","Colossians 3:23",
+  "1 Thessalonians 5:16-18","2 Thessalonians 3:3",
+  "2 Timothy 1:7","2 Timothy 3:16-17",
+  "Hebrews 4:12","Hebrews 11:1","Hebrews 12:1-2","Hebrews 13:8",
+  "James 1:2-4","James 1:5","James 1:19","James 4:7-8",
+  "1 Peter 5:7","1 Peter 2:9","2 Peter 1:3-4",
+  "1 John 1:9","1 John 3:1","1 John 4:18",
+  "Revelation 21:4",
+
+  // OT highlights
+  "Genesis 1:1","Genesis 50:20",
+  "Exodus 14:14","Deuteronomy 31:6","Joshua 1:9",
+  "1 Samuel 16:7","2 Chronicles 7:14",
+  "Isaiah 40:31","Isaiah 41:10","Isaiah 43:2","Isaiah 53:5","Isaiah 55:8-9",
+  "Jeremiah 29:11","Lamentations 3:22-23",
+  "Ezekiel 36:26","Micah 6:8"
+];
+
+function isLeapYear(y){ return (y%4===0 && y%100!==0) || (y%400===0); }
+function dayOfYear(d){
+  const start = new Date(d.getFullYear(), 0, 0);
+  const diff = d - start;
+  return Math.floor(diff / (1000*60*60*24)); // 1..365/366
+}
+function mulberry32(seed){
+  return function() {
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function seededShuffle(arr, seed){
+  const rng = mulberry32(seed);
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(rng()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function buildYearSchedule(year){
+  const shuffled = seededShuffle(VOD_REF_POOL, year);
+  // ensure we have 365 even if pool is smaller
+  const out = [];
+  let i=0;
+  while(out.length < 365){
+    out.push(shuffled[i % shuffled.length]);
+    i++;
+  }
+  return out;
+}
+async function fetchPassage(ref){
+  const url = API_BASE + encodeURIComponent(ref) + `?translation=${encodeURIComponent(BIBLE_TRANSLATION)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error("Bible fetch failed");
+  return await res.json();
+}
+
+/* quiz generator */
+function pickKeywordsFromText(text){
+  const stop = new Set([
+    "the","and","of","to","a","in","that","for","is","it","with","as","be","shall","he","she","they","them",
+    "his","her","their","thou","thy","ye","you","your","i","me","my","we","our","us","on","at","by","from",
+    "or","not","are","was","were","but","have","hath","do","doth","so","if","then","when","which","who",
+    "whom","this","these","those","unto","also","all","an","into","out","up","down"
+  ]);
+  const words = (text.toLowerCase().match(/[a-z']+/g) || [])
+    .filter(w => w.length>=5 && !stop.has(w));
+  const counts = new Map();
+  for(const w of words) counts.set(w, (counts.get(w)||0)+1);
+  return Array.from(counts.entries())
+    .sort((a,b)=>b[1]-a[1])
+    .map(x=>x[0]).slice(0, 12);
+}
+function makeBlankQuestions(text){
+  const keys = pickKeywordsFromText(text);
+  const sentences = text.replace(/\s+/g," ").split(/(?<=[.!?])\s+/).filter(s=>s.length>30);
+  const qs = [];
+  for(const k of keys){
+    if(qs.length>=4) break;
+    const s = sentences.find(x => new RegExp(`\\b${k}\\b`,"i").test(x));
+    if(!s) continue;
+    const prompt = s.replace(new RegExp(`\\b${k}\\b`,"ig"), "_____");
+    qs.push({ type:"blank", prompt, answer:k });
+  }
+  return qs;
+}
+function buildQuizFromVerseText(text){
+  const blanks = makeBlankQuestions(text);
+  const keys = pickKeywordsFromText(text);
+  const k1 = keys[0] || "faith";
+  const k2 = keys[1] || "wisdom";
+  const k3 = keys[2] || "peace";
+
+  const themeOpts = shuffle([k1,k2,k3,"pride"]).map(w=>w[0].toUpperCase()+w.slice(1));
+  const correctTheme = themeOpts.map(x=>x.toLowerCase()).indexOf(k1.toLowerCase());
+  const mc = [
+    { type:"mc", q:"Which word best matches the main theme of today’s verse?",
+      options: themeOpts, correct: (correctTheme<0?0:correctTheme) },
+    { type:"mc", q:"What’s a good response to today’s verse?",
+      options: ["Pray and apply one action step","Ignore it and move on","Only memorize it, no change","Argue with everyone about it"],
+      correct: 0 }
+  ];
+  return [...blanks, ...mc];
+}
+function renderVODQuiz(quiz){
+  const el = $("#vodQuiz");
+  el.innerHTML = quiz.map((q,i)=>{
+    if(q.type==="blank"){
+      return `
+        <div style="margin:12px 0;">
+          <div><b>${i+1}) Fill in the blank</b></div>
+          <div class="muted" style="margin:6px 0;">${q.prompt}</div>
+          <input id="vodBlank${i}" placeholder="Type the missing word…" />
+        </div>
+      `;
+    }
+    const name = `vodMC${i}`;
+    const opts = q.options.map((opt,idx)=>`
+      <label style="display:block;margin:6px 0;" class="muted">
+        <input type="radio" name="${name}" value="${idx}" /> ${opt}
+      </label>
+    `).join("");
+    return `
+      <div style="margin:12px 0;">
+        <div><b>${i+1}) ${q.q}</b></div>
+        <div style="margin-left:10px;margin-top:6px;">${opts}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+let todaysQuiz = null;
+
+async function loadVerseOfDay(){
+  $("#vodStatus").textContent = "Loading…";
+  $("#vodQuizResult").textContent = "";
+  $("#vodText").textContent = "Loading…";
+  $("#vodMeta").textContent = "";
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const schedule = buildYearSchedule(year);
+
+  let doy = dayOfYear(today);
+  if(doy > 365) doy = 365; // if leap day, clamp
+
+  let idx = doy - 1;
+  let tries = 0;
+
+  while(tries < 10){
+    const ref = schedule[idx % schedule.length];
+    $("#vodRef").textContent = `Reference: ${ref}`;
+
+    try{
+      const data = await fetchPassage(ref);
+      const text = (data.text || "").trim();
+      $("#vodText").textContent = text || "(No text returned.)";
+      $("#vodMeta").textContent = `${data.reference || ref} • ${data.translation_name || "KJV"}`;
+      todaysQuiz = buildQuizFromVerseText(text);
+      renderVODQuiz(todaysQuiz);
+      resetVODQuiz();
+      loadNotes();
+      $("#vodStatus").textContent = "Loaded ✅";
+      return;
+    }catch(e){
+      tries++;
+      idx++;
+    }
+  }
+
+  $("#vodStatus").textContent = "Couldn’t load (check internet)";
+  $("#vodText").textContent = "Couldn’t load today’s verse. Try again later.";
+  $("#vodQuiz").textContent = "Quiz unavailable until verse loads.";
+}
+
+function resetVODQuiz(){
+  $("#vodQuizResult").textContent = "";
+  // blanks
+  $$(`[id^="vodBlank"]`).forEach(i=>i.value="");
+  // radios
+  $$(`input[type="radio"]`).forEach(r=>r.checked=false);
+}
+
+function checkVODQuiz(){
+  if(!todaysQuiz) return;
+  let correct=0, total=todaysQuiz.length;
+
+  todaysQuiz.forEach((q,i)=>{
+    if(q.type==="blank"){
+      const v = ($("#vodBlank"+i)?.value || "").trim().toLowerCase();
+      if(v === q.answer.toLowerCase()) correct++;
+    }else{
+      const picked = document.querySelector(`input[name="vodMC${i}"]:checked`);
+      if(picked && Number(picked.value)===q.correct) correct++;
+    }
+  });
+
+  $("#vodQuizResult").textContent = (correct===total)
+    ? `✅ Perfect! ${correct}/${total}`
+    : `❌ ${correct}/${total} — try again`;
+}
+
+/* reflection notes */
+const NOTES_KEY = "vod_notes_v1";
+function saveNotes(){
+  const d = new Date();
+  const key = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+  const notes = $("#vodNotes").value || "";
+  const all = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
+  all[key] = notes;
+  localStorage.setItem(NOTES_KEY, JSON.stringify(all));
+  $("#notesStatus").textContent = "Saved ✅";
+  setTimeout(()=>$("#notesStatus").textContent="—", 1200);
+}
+function loadNotes(){
+  const d = new Date();
+  const key = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+  const all = JSON.parse(localStorage.getItem(NOTES_KEY) || "{}");
+  $("#vodNotes").value = all[key] || "";
+  $("#notesStatus").textContent = "—";
+}
+
+/* =========================================================
+   PROVERBS (all chapters) + quiz
+========================================================= */
+for(let i=1;i<=31;i++){
+  const opt = document.createElement("option");
+  opt.value = String(i);
+  opt.textContent = String(i);
+  $("#provChapter").appendChild(opt);
+}
+$("#provChapter").value = "1";
+
+let provText = "";
+let provQuizState = null;
+
+async function loadProverbs(){
+  const ch = $("#provChapter").value;
+  const ref = `Proverbs ${ch}`;
+  $("#provRef").textContent = ref;
+  $("#provStatus").textContent = "Loading…";
+  $("#provText").textContent = "Loading…";
+  $("#provQuiz").textContent = "Press “Create Quiz”.";
+  $("#provQuizResult").textContent = "";
+  provQuizState = null;
+
+  try{
+    const data = await fetchPassage(ref);
+    provText = (data.text || "").trim();
+    $("#provText").textContent = provText || "(No text returned.)";
+    $("#provStatus").textContent = "Loaded ✅";
+  }catch{
+    provText = "";
+    $("#provText").textContent = "Couldn’t load Proverbs. Check your internet.";
+    $("#provStatus").textContent = "Load failed";
+  }
+}
+
+function pickKeywords(text){
+  const stop = new Set(["the","and","of","to","a","in","that","for","is","it","with","as","be","shall","he","she","they","them",
+    "his","her","their","thou","thy","ye","you","your","i","me","my","we","our","us","on","at","by","from","or","not","are","was","were",
+    "but","have","hath","do","doth","so","if","then","when","which","who","whom","this","these","those","unto","also","all","an","into"]);
+  const words = (text.toLowerCase().match(/[a-z']+/g) || []).filter(w=>w.length>=5 && !stop.has(w));
+  const counts = new Map();
+  words.forEach(w=>counts.set(w,(counts.get(w)||0)+1));
+  return Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0, 20);
+}
+function makeBlankFromText(text, answer){
+  const idx = text.toLowerCase().indexOf(answer);
+  if(idx<0) return null;
+  const start = Math.max(0, text.lastIndexOf(".", idx-1)+1);
+  const end = text.indexOf(".", idx);
+  const chunk = text.slice(start, end>-1?end+1:Math.min(text.length, idx+160)).trim();
+  if(chunk.length < 30) return null;
+  const re = new RegExp("\\b"+answer+"\\b","i");
+  return { prompt: chunk.replace(re, "_____"), answer };
+}
+
+function makeProverbsQuiz(){
+  if(!provText){
+    $("#provQuiz").textContent = "Load a chapter first.";
+    return;
+  }
+  const keys = pickKeywords(provText);
+  const qs = [];
+  for(const k of keys){
+    if(qs.length>=6) break;
+    const q = makeBlankFromText(provText, k);
+    if(q) qs.push(q);
+  }
+  if(qs.length===0){
+    $("#provQuiz").textContent = "Couldn’t generate a quiz for this chapter. Try another.";
+    return;
+  }
+  provQuizState = qs;
+  $("#provQuiz").innerHTML = qs.map((q,i)=>`
+    <div style="margin:12px 0;">
+      <div><b>${i+1}) Fill in the blank</b></div>
+      <div class="muted" style="margin:6px 0;">${q.prompt}</div>
+      <input id="provAns${i}" placeholder="Type the missing word…" />
+    </div>
+  `).join("");
+  $("#provQuizResult").textContent = "";
+}
+
+function checkProvQuiz(){
+  if(!provQuizState) return;
+  let correct=0;
+  provQuizState.forEach((q,i)=>{
+    const v = ($("#provAns"+i)?.value || "").trim().toLowerCase();
+    if(v === q.answer.toLowerCase()) correct++;
+  });
+  const total = provQuizState.length;
+  $("#provQuizResult").textContent = (correct===total)
+    ? `✅ Perfect! ${correct}/${total}`
+    : `❌ ${correct}/${total} — answers are single words`;
+}
+function resetProvQuiz(){
+  if(!provQuizState) return;
+  provQuizState.forEach((_,i)=>{ const el=$("#provAns"+i); if(el) el.value=""; });
+  $("#provQuizResult").textContent = "";
+}
+
+/* ---------------- Auto-load bible content once so Verse tab is ready ---------------- */
+loadVerseOfDay();
 </script>
-
 </body>
 </html>
