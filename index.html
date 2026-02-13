@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brain Games (Single File)</title>
+
+<style>
+  body{font-family:Arial,sans-serif;background:#f5f6fa;text-align:center;margin:0}
+  header{background:#222;color:#fff;padding:18px}
+  .tabs button{margin:5px;padding:8px 14px;border:none;border-radius:10px;cursor:pointer}
+  .view{display:none;padding:20px}
+  .active{display:block}
+  .grid{display:grid;grid-template-columns:repeat(6,60px);gap:8px;justify-content:center;margin-top:15px}
+  .card{width:60px;height:60px;background:#444;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;border-radius:12px;user-select:none}
+  #reactionBox{width:200px;height:200px;margin:20px auto;background:#c0392b;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;border-radius:18px;user-select:none}
+  select{padding:8px;border-radius:10px}
+  input{padding:10px;border-radius:10px;border:1px solid #ccc}
+  button{background:#eee}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>🧠 Brain Games</h1>
+  <p>Easy → Hard brain boosters (all in English)</p>
+
+  <div class="tabs">
+    <button onclick="showView('home')">Home</button>
+    <button onclick="showView('memory')">Memory</button>
+    <button onclick="showView('reaction')">Reaction</button>
+    <button onclick="showView('scramble')">Scramble</button>
+    <button onclick="showView('math')">Math</button>
+    <button onclick="showView('hidden')">Hidden Object</button>
+    <button onclick="showView('wordsearch')">Word Search</button>
+    <button onclick="showView('crossword')">Crossword</button>
+  </div>
+</header>
+
+<main>
+
+<section id="home" class="view active">
+  <h2>Choose a game above 👆</h2>
+  <p>Tip: Pick difficulty first, then press Start in each game.</p>
+
+  <div style="margin-top:15px">
+    Difficulty:
+    <select id="difficultySelect">
+      <option value="easy">Easy</option>
+      <option value="medium" selected>Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+  </div>
+</section>
+
+<section id="memory" class="view">
+  <h2>Memory Match</h2>
+  <button onclick="startMemory()">Start Game</button>
+  <div id="memoryBoard" class="grid"></div>
+</section>
+
+<section id="reaction" class="view">
+  <h2>Reaction Time</h2>
+  <button onclick="startReaction()">Start</button>
+  <div id="reactionBox">Press Start</div>
+  <p id="reactionResult"></p>
+</section>
+
+<section id="scramble" class="view">
+  <h2>Word Scramble</h2>
+  <button onclick="newScramble()">New Word</button>
+  <h3 id="scrambledWord">—</h3>
+  <input id="scrambleInput" placeholder="Your guess">
+  <button onclick="checkScramble()">Check</button>
+  <p id="scrambleResult"></p>
+</section>
+
+<section id="math" class="view">
+  <h2>Quick Math</h2>
+  <button onclick="newMath()">New Question</button>
+  <h3 id="mathQuestion">—</h3>
+  <input id="mathInput" type="number" placeholder="Answer">
+  <button onclick="checkMath()">Check</button>
+  <p id="mathResult"></p>
+</section>
+
+<section id="hidden" class="view">
+  <h2>Find the Hidden Object</h2>
+  <button onclick="startHidden()">Start</button>
+  <p>Find the ⭐ hidden somewhere!</p>
+  <div id="hiddenGrid" class="grid"></div>
+</section>
+
+<section id="wordsearch" class="view">
+  <h2>Word Search</h2>
+  <button onclick="startWordSearch()">Generate Puzzle</button>
+  <div id="wordGrid" class="grid"></div>
+  <p id="wordList"></p>
+</section>
+
+<section id="crossword" class="view">
+  <h2>Mini Crossword</h2>
+  <button onclick="startCrossword()">Generate</button>
+  <div id="crossGrid" class="grid"></div>
+  <p id="crossClues"></p>
+</section>
+
+</main>
+
+<script>
+function showView(id){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function difficulty(){
+  return document.getElementById("difficultySelect").value;
+}
+
+/* MEMORY */
+function startMemory(){
+  const board=document.getElementById("memoryBoard");
+  board.innerHTML="";
+  let size = (difficulty()=="easy")?8:(difficulty()=="medium")?12:18;
+  let emojis=["🍎","🍌","🍇","🍓","🍒","🥝","🍍","🥕","🌽","🍩","🍪","🍫"];
+
+  let pairs = size/2;
+  let arr=[...emojis.slice(0,pairs),...emojis.slice(0,pairs)]
+    .sort(()=>Math.random()-0.5);
+
+  let first=null, lock=false;
+
+  arr.forEach(e=>{
+    let card=document.createElement("div");
+    card.className="card";
+    card.textContent="❓";
+    card.dataset.emoji=e;
+    card.onclick=()=>{
+      if(lock || card.classList.contains("done") || card===first) return;
+      card.textContent=card.dataset.emoji;
+
+      if(!first){
+        first=card;
+      } else {
+        if(first.dataset.emoji===card.dataset.emoji){
+          first.classList.add("done");
+          card.classList.add("done");
+          first=null;
+        } else {
+          lock=true;
+          setTimeout(()=>{
+            first.textContent="❓";
+            card.textContent="❓";
+            first=null;
+            lock=false;
+          },550);
+        }
+      }
+    };
+    board.appendChild(card);
+  });
+}
+
+/* REACTION */
+let reactionTimer=null;
+function startReaction(){
+  const box=document.getElementById("reactionBox");
+  const res=document.getElementById("reactionResult");
+  res.textContent="";
+  box.style.background="#c0392b";
+  box.textContent="Wait...";
+  box.onclick=null;
+
+  if(reactionTimer) clearTimeout(reactionTimer);
+
+  const wait = Math.random()*2500 + 1200;
+  reactionTimer=setTimeout(()=>{
+    const start=Date.now();
+    box.style.background="#27ae60";
+    box.textContent="CLICK!";
+    box.onclick=()=>{
+      const t=Date.now()-start;
+      res.textContent=`✅ ${t} ms`;
+      box.style.background="#34495e";
+      box.textContent="Press Start";
+    };
+  },wait);
+
+  box.onclick=()=>{
+    // clicked too early
+    if(box.textContent==="Wait..."){
+      clearTimeout(reactionTimer);
+      box.style.background="#8e44ad";
+      box.textContent="Too soon 😭";
+      res.textContent="False start. Press Start again.";
+      box.onclick=null;
+    }
+  };
+}
+
+/* SCRAMBLE */
+const wordBank = {
+  easy:["brain","focus","puzzle","logic","learn","smart","habit","calm"],
+  medium:["balance","journal","pattern","memory","capture","curious","problem","progress"],
+  hard:["consequence","extraordinary","misunderstanding","unpredictable","transformation","configuration"]
+};
+let currentWord="";
+function newScramble(){
+  const diff=difficulty();
+  currentWord = wordBank[diff][Math.floor(Math.random()*wordBank[diff].length)];
+  let scrambled=currentWord.split("").sort(()=>Math.random()-0.5).join("");
+  if(scrambled===currentWord) scrambled=scrambled.split("").reverse().join("");
+  document.getElementById("scrambledWord").textContent=scrambled.toUpperCase();
+  document.getElementById("scrambleResult").textContent="";
+  document.getElementById("scrambleInput").value="";
+}
+function checkScramble(){
+  const guess=document.getElementById("scrambleInput").value.trim().toLowerCase();
+  document.getElementById("scrambleResult").textContent =
+    guess===currentWord ? "✅ Correct!" : "❌ Try again!";
+}
+
+/* MATH */
+let mathAnswer=0;
+function newMath(){
+  let a,b,op;
+  if(difficulty()=="easy"){
+    a=Math.floor(Math.random()*15); b=Math.floor(Math.random()*15); op="+";
+    mathAnswer=a+b;
+  } else if(difficulty()=="medium"){
+    a=Math.floor(Math.random()*30); b=Math.floor(Math.random()*20);
+    op=Math.random()<0.5?"+":"-";
+    mathAnswer = op==="+" ? a+b : a-b;
+  } else {
+    a=Math.floor(Math.random()*12)+2; b=Math.floor(Math.random()*12)+2;
+    op=Math.random()<0.5?"×":"÷";
+    if(op==="×"){ mathAnswer=a*b; }
+    else { mathAnswer=a; a=a*b; } // make divisible
+  }
+  document.getElementById("mathQuestion").textContent = `${a} ${op} ${b} = ?`;
+  document.getElementById("mathResult").textContent="";
+  document.getElementById("mathInput").value="";
+}
+function checkMath(){
+  const val = Number(document.getElementById("mathInput").value);
+  document.getElementById("mathResult").textContent =
+    val===mathAnswer ? "✅ Correct!" : `❌ Nope. Answer: ${mathAnswer}`;
+}
+
+/* HIDDEN OBJECT */
+function startHidden(){
+  const grid=document.getElementById("hiddenGrid");
+  grid.innerHTML="";
+  let size = (difficulty()=="easy")?24:(difficulty()=="medium")?36:48;
+  let hidden = Math.floor(Math.random()*size);
+  let started = Date.now();
+
+  for(let i=0;i<size;i++){
+    let cell=document.createElement("div");
+    cell.className="card";
+    cell.textContent="⬜";
+    cell.onclick=()=>{
+      if(i===hidden){
+        const ms = Date.now()-started;
+        cell.textContent="⭐";
+        cell.style.background="#27ae60";
+        setTimeout(()=>alert(`✅ Found it in ${ms} ms!`),100);
+      } else {
+        cell.textContent="▫️";
+      }
+    };
+    grid.appendChild(cell);
+  }
+}
+
+/* WORD SEARCH (simple grid generator) */
+function startWordSearch(){
+  const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const grid=document.getElementById("wordGrid");
+  grid.innerHTML="";
+
+  let size = (difficulty()=="easy")?36:(difficulty()=="medium")?49:64;
+  let cols = Math.round(Math.sqrt(size));
+  grid.style.gridTemplateColumns=`repeat(${cols},60px)`;
+
+  for(let i=0;i<size;i++){
+    let cell=document.createElement("div");
+    cell.className="card";
+    cell.textContent=letters[Math.floor(Math.random()*26)];
+    grid.appendChild(cell);
+  }
+
+  const list = (difficulty()=="easy") ? "Find: BRAIN, LOGIC"
+             : (difficulty()=="medium") ? "Find: MEMORY, FOCUS, PUZZLE"
+             : "Find: TRANSFORM, PATTERN, CONSEQUENCE";
+  document.getElementById("wordList").textContent=list;
+}
+
+/* CROSSWORD (placeholder mini) */
+function startCrossword(){
+  const grid=document.getElementById("crossGrid");
+  grid.innerHTML="";
+  let cols=5;
+  grid.style.gridTemplateColumns=`repeat(${cols},60px)`;
+
+  const answers = (difficulty()=="easy") ? "BRAIN"
+                : (difficulty()=="medium") ? "FOCUS"
+                : "LOGIC";
+
+  for(let i=0;i<25;i++){
+    let cell=document.createElement("div");
+    cell.className="card";
+    cell.textContent = answers[i%answers.length];
+    grid.appendChild(cell);
+  }
+
+  document.getElementById("crossClues").textContent =
+    (difficulty()=="easy") ? "Clue: Think organ"
+    : (difficulty()=="medium") ? "Clue: Concentration"
+    : "Clue: Reasoning skill";
+}
+</script>
+
+</body>
+</html>
